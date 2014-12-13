@@ -1,12 +1,11 @@
 package Net::Recurly;
 use Moose;
-use LWP::UserAgent;
+use LWP::UserAgent 6;
 use HTTP::Request;
 use XML::Simple;
 
 has 'subdomain' => (is => 'ro', isa => 'Str', required => 1);
-has 'username'  => (is => 'ro', isa => 'Str', required => 1);
-has 'password'  => (is => 'ro', isa => 'Str', required => 1);
+has 'api_key'  => (is => 'ro', isa => 'Str', required => 1);
 
 has 'ua' => (is => 'ro', isa => 'Object', lazy_build => 1);
 has 'api_host' => (is => 'ro', isa => 'Str', lazy_build => 1);
@@ -14,7 +13,7 @@ has 'api_host' => (is => 'ro', isa => 'Str', lazy_build => 1);
 sub get_account {
     my $self = shift;
     my $acct_code = shift;
-    return $self->get("/accounts/$acct_code");
+    return $self->get("/v2/accounts/$acct_code");
 }
 
 # http://docs.recurly.com/api/accounts
@@ -22,19 +21,19 @@ sub get_account {
 sub create_account {
     my ($self, $params) = @_;
 
-    return $self->post('/accounts', $params, 'account');
+    return $self->post('/v2/accounts', $params, 'account');
 }
 
 sub delete_account {
     my $self = shift;
     my $acct_code = shift;
-    return $self->delete("/accounts/$acct_code");
+    return $self->delete("/v2/accounts/$acct_code");
 }
 
 sub get_billing_info {
     my $self = shift;
     my $acct_code = shift;
-    return $self->get("/accounts/$acct_code/billing_info");
+    return $self->get("/v2/accounts/$acct_code/billing_info");
 }
 
 # http://docs.recurly.com/api/billing-info
@@ -43,31 +42,25 @@ sub get_billing_info {
 sub set_billing_info {
     my ($self, $acct_code, $params) = @_;
 
-    return $self->put("/accounts/$acct_code/billing_info", $params, 'billing_info');
+    return $self->put("/v2/accounts/$acct_code/billing_info", $params, 'billing_info');
 }
 
-sub get_charges {
+sub get_adjustments {
     my $self = shift;
     my $acct_code = shift;
-    return $self->get("/accounts/$acct_code/charges");
+    return $self->get("/v2/accounts/$acct_code/adjustments");
 }
 
-sub get_credits {
+sub get_account_invoices {
     my $self = shift;
     my $acct_code = shift;
-    return $self->get("/accounts/$acct_code/credits");
-}
-
-sub get_invoices {
-    my $self = shift;
-    my $acct_code = shift;
-    return $self->get("/accounts/$acct_code/invoices");
+    return $self->get("/v2/accounts/$acct_code/invoices");
 }
 
 sub get_subscription {
     my $self = shift;
-    my $acct_code = shift;
-    return $self->get("/accounts/$acct_code/subscription");
+    my $sub_uuid = shift;
+    return $self->get("/v2/subscriptions/$sub_uuid");
 }
 
 
@@ -89,12 +82,12 @@ sub create_subscription {
 sub get_subscription_plan {
     my $self = shift;
     my $plan_code = shift;
-    return $self->get("/company/plans/$plan_code");
+    return $self->get("/v2/plans/$plan_code");
 }
 
 sub get_subscription_plans {
     my $self = shift;
-    return $self->get("/company/plans");
+    return $self->get("/v2/plans");
 }
 
 sub get_transactions {
@@ -104,7 +97,7 @@ sub get_transactions {
     if (my $p = $opts{page}) {
         $extra .= "page=$p;";
     }
-    return $self->get("/transactions$extra");
+    return $self->get("/v2/transactions$extra");
 }
 
 sub get_account_transactions {
@@ -115,7 +108,7 @@ sub get_account_transactions {
     if (my $p = $opts{page}) {
         $extra .= "page=$p;";
     }
-    return $self->get("/accounts/$acct_code/transactions$extra");
+    return $self->get("/v2/accounts/$acct_code/transactions$extra");
 }
 
 sub get {
@@ -146,7 +139,7 @@ sub req {
     # build request
     my $url = 'https://' . $self->api_host . $path;
     my $req = HTTP::Request->new($method => $url);
-    $req->authorization_basic($self->username, $self->password);
+    $req->authorization_basic($self->api_key);
     $req->header('Accept' => 'application/xml');
 
     # serialize body
@@ -164,6 +157,7 @@ sub req {
     my $code = $resp->code;
     if ($code =~ /^[23]\d\d$/) {
         return XMLin($resp->content);
+		#return $resp->content;
     }
     return if $code == 404;
     die "GET $url failed ($code - " . $resp->content . ")\n";
@@ -175,7 +169,7 @@ sub _build_ua {
     $ua->credentials(
         $self->api_host . ':443',
         'default',
-        $self->username => $self->password,
+        $self->api_key,
     );
     $ua->protocols_allowed(['https']);
     return $ua;

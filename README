@@ -5,22 +5,21 @@ SYNOPSIS
   use Net::Recurly;
 
   my $R = Net::Recurly->new(
-      username => 'api-test@your-domain.com',
-      password => 'your-password',
+      apikey => 'private_api_key',
       subdomain => 'your-domain',
   );
   my $subscription = $r->get_subscription('your-account-code');
 
 DESCRIPTION
 
-Net::Recurly is a thin layer around the Recurly.com API.  It currently only
+Net::Recurly is a thin layer around version 2 of the Recurly.com API.  It currently only
 supports GET requests, although supporting the API more fully is planned.
 
 The XML responses are returned as a hash, using XML::Simple.
 
 SEE ALSO
 
-The Recurly API documentation: http://docs.recurly.com/
+The Recurly API documentation: http://docs.recurly.com/api/
 
 BUGS AND DEFECTS
 
