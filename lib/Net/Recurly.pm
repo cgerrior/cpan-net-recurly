@@ -51,12 +51,6 @@ sub get_adjustments {
     return $self->get("/v2/accounts/$acct_code/adjustments");
 }
 
-sub get_account_invoices {
-    my $self = shift;
-    my $acct_code = shift;
-    return $self->get("/v2/accounts/$acct_code/invoices");
-}
-
 sub get_subscription {
     my $self = shift;
     my $sub_uuid = shift;
@@ -105,10 +99,44 @@ sub get_account_transactions {
     my $acct_code = shift;
     my %opts = @_;
     my $extra = '?';
-    if (my $p = $opts{page}) {
-        $extra .= "page=$p;";
+    if (my $p = $opts{per_page}) {
+        $extra .= "per_page=$p;";
     }
     return $self->get("/v2/accounts/$acct_code/transactions$extra");
+}
+
+# https://docs.recurly.com/api/invoices
+
+sub get_all_invoices {
+	my $self = shift;
+	my %opts = @_;
+	my $extra = '?';
+	if (my $p = $opts{per_page}) {
+		$extra .= "per_page=$p;";
+	}
+	return $self->get("/v2/invoices");
+}
+
+sub get_acct_invoices {
+	my $self = shift;
+	my $acct_code = shift;
+    my $extra = '?';
+	if (my $p = $opts{per_page}) {
+		$extra .= "per_page=$p;";
+	}
+	return $self->get("/v2/accounts/$acct_code/invoices");
+}
+
+sub get_invoice {
+	my $self = shift;
+	my $invoice_id = shift;
+	return $self->get("/v2/invoices/$invoice_id");
+}
+
+sub get_invoice_pdf {
+	my $self = shift;
+	my $invoice_id = shift;
+	return
 }
 
 sub get {
