@@ -10,25 +10,93 @@ has 'api_key'  => (is => 'ro', isa => 'Str', required => 1);
 has 'ua' => (is => 'ro', isa => 'Object', lazy_build => 1);
 has 'api_host' => (is => 'ro', isa => 'Str', lazy_build => 1);
 
+# Accounts API
+# http://docs.recurly.com/api/accounts
+# required param: account_code
+
+sub list_accounts {
+    my $self = shift;
+    my $acct_code = shift;
+    my $extra = '?';
+	if ($opts{cursor}) {
+		$extra .= "cursor;";
+	}
+	if (my $s = $opts{state}) {
+		$extra .= "state = $s;";
+	}
+    if (my $p = $opts{per_page}) {
+        $extra .= "per_page=$p;";
+    }
+    return $self->get("/v2/accounts$extra");
+}
+
 sub get_account {
     my $self = shift;
     my $acct_code = shift;
     return $self->get("/v2/accounts/$acct_code");
 }
 
-# http://docs.recurly.com/api/accounts
-# required param: account_code
 sub create_account {
     my ($self, $params) = @_;
-
     return $self->post('/v2/accounts', $params, 'account');
 }
 
-sub delete_account {
+sub close_account {
     my $self = shift;
     my $acct_code = shift;
     return $self->delete("/v2/accounts/$acct_code");
 }
+
+sub reopen_account {
+	my $self = shift;
+	my $acct_code = shift;
+	return $self->put("/v2/accounts/$acct_code");
+}
+
+sub get_account_notes {
+    my $self = shift;
+    my $acct_code = shift;
+    return $self->get("/v2/accounts/$acct_code/notes");
+}
+
+# Adjustments API
+# https://docs.recurly.com/api/adjustments
+
+sub list_account_adjustments {
+    my $self = shift;
+    my $acct_code = shift;
+    return $self->get("/v2/accounts/$acct_code/adjustments");
+}
+
+sub get_adjustment {
+	my $self = shift;
+	my $adjustment_uuid = shift;
+    my $extra = '?';
+	if (my $t = $opts{type}) {
+		$extra .= "type = $t;";
+	}
+	if ($opts{cursor}) {
+		$extra .= "cursor;";
+	}
+	if (my $s = $opts{state}) {
+		$extra .= "state = $s;";
+	}
+    if (my $p = $opts{per_page}) {
+        $extra .= "per_page=$p;";
+    }
+	return $self->get("/v2/adjustments/$adjustment_uuid$extra");
+}
+
+sub delete_adjustment {
+	my $self = shift;
+	my $adjustment_uuid = shift;
+	return $self->delete("/v2/adjustments/$adjustment_uuid");
+}
+
+# Billing Info. API
+# http://docs.recurly.com/api/billing-info
+# required params: first_name, last_name, credit_card.number, credit_card.verification_value
+# credit_card.year, credit_card.month
 
 sub get_billing_info {
     my $self = shift;
@@ -36,20 +104,35 @@ sub get_billing_info {
     return $self->get("/v2/accounts/$acct_code/billing_info");
 }
 
-# http://docs.recurly.com/api/billing-info
-# required params: first_name, last_name, credit_card.number, credit_card.verification_value
-# credit_card.year, credit_card.month
 sub set_billing_info {
     my ($self, $acct_code, $params) = @_;
-
     return $self->put("/v2/accounts/$acct_code/billing_info", $params, 'billing_info');
 }
 
-sub get_adjustments {
+sub clear_billing_info {
     my $self = shift;
     my $acct_code = shift;
-    return $self->get("/v2/accounts/$acct_code/adjustments");
+    return $self->delete("/v2/accounts/$acct_code/billing_info");
 }
+
+# Coupons API
+# https://docs.recurly.com/api/coupons
+
+sub list_coupons {
+	my $self = shift;
+    my $extra = '?';
+	if ($opts{cursor}) {
+		$extra .= "cursor;";
+	}
+	if (my $s = $opts{state}) {
+		$extra .= "state = $s;";
+	}
+    if (my $p = $opts{per_page}) {
+        $extra .= "per_page=$p;";
+    }
+	return $self->get("/v2/coupons$extra")
+}
+
 
 sub get_subscription {
     my $self = shift;
@@ -69,7 +152,6 @@ sub delete_subscription {
 # CC and billing info required unless info is on file
 sub create_subscription {
     my ($self, $acct_code, $params) = @_;
-
     return $self->post("/accounts/$acct_code/subscription", $params, 'subscription');
 }
 
