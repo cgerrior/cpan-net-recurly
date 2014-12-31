@@ -18,6 +18,7 @@ sub list_accounts {
     my $self = shift;
     my $acct_code = shift;
     my $extra = '?';
+	my %opts = @_;
 	if ($opts{cursor}) {
 		$extra .= "cursor;";
 	}
@@ -72,6 +73,7 @@ sub get_adjustment {
 	my $self = shift;
 	my $adjustment_uuid = shift;
     my $extra = '?';
+	my %opts = @_;
 	if (my $t = $opts{type}) {
 		$extra .= "type = $t;";
 	}
@@ -121,6 +123,7 @@ sub clear_billing_info {
 sub list_coupons {
 	my $self = shift;
     my $extra = '?';
+	my %opts = @_;
 	if ($opts{cursor}) {
 		$extra .= "cursor;";
 	}
@@ -133,13 +136,11 @@ sub list_coupons {
 	return $self->get("/v2/coupons$extra")
 }
 
-
 sub get_subscription {
     my $self = shift;
     my $sub_uuid = shift;
     return $self->get("/v2/subscriptions/$sub_uuid");
 }
-
 
 sub delete_subscription {
     my $self = shift;
@@ -203,6 +204,7 @@ sub get_acct_invoices {
 	my $self = shift;
 	my $acct_code = shift;
     my $extra = '?';
+	my %opts = @_;
 	if (my $p = $opts{per_page}) {
 		$extra .= "per_page=$p;";
 	}
