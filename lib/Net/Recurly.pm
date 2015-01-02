@@ -60,6 +60,11 @@ sub get_account_notes {
     return $self->get("/v2/accounts/$acct_code/notes");
 }
 
+sub update_account {
+	my ($self, $acct_code, $params) = @_;
+	return $self->put("/v2/accounts/$acct_code", $params, 'account');
+}
+
 # Adjustments API
 # https://docs.recurly.com/api/adjustments
 
@@ -117,6 +122,12 @@ sub clear_billing_info {
     return $self->delete("/v2/accounts/$acct_code/billing_info");
 }
 
+sub update_billing_info {
+	my ($self, $acct_code, $params) = @_;
+	return $self->put("/v2/accounts/$acct_code/billing_info", $params, 'billing_info');
+}
+
+
 # Coupons API
 # https://docs.recurly.com/api/coupons
 
@@ -152,8 +163,8 @@ sub delete_subscription {
 # required params: plan_code
 # CC and billing info required unless info is on file
 sub create_subscription {
-    my ($self, $acct_code, $params) = @_;
-    return $self->post("/accounts/$acct_code/subscription", $params, 'subscription');
+    my ($self, $params) = @_;
+    return $self->post("/v2/subscriptions", $params, 'subscription');
 }
 
 sub get_subscription_plan {
