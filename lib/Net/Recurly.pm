@@ -29,23 +29,30 @@ sub list_accounts {
         $extra .= "per_page=$p;";
     }
     return $self->get("/v2/accounts$extra");
+    #return $self->get("/v2/accounts");
+	
 }
 
 sub get_account {
     my $self = shift;
     my $acct_code = shift;
-    return $self->get("/v2/accounts/$acct_code");
+    my $account = $self->get("/v2/accounts/$acct_code");
+	bless($account, "Net::Recurly::Account");
+	return $account;
 }
 
 sub create_account {
     my ($self, $params) = @_;
-    return $self->post('/v2/accounts', $params, 'account');
+    my $account = $self->post('/v2/accounts', $params, 'account');
+	bless($account, "Net::Recurly::Account");
+	return $account;
 }
 
 sub close_account {
     my $self = shift;
     my $acct_code = shift;
     return $self->delete("/v2/accounts/$acct_code");
+	
 }
 
 sub reopen_account {
@@ -62,7 +69,9 @@ sub get_account_notes {
 
 sub update_account {
 	my ($self, $acct_code, $params) = @_;
-	return $self->put("/v2/accounts/$acct_code", $params, 'account');
+	my $account = $self->put("/v2/accounts/$acct_code", $params, 'account');
+	bless($account, "Net::Recurly::Account");
+	return $account;
 }
 
 # Adjustments API
@@ -102,18 +111,13 @@ sub delete_adjustment {
 
 # Billing Info. API
 # http://docs.recurly.com/api/billing-info
-# required params: first_name, last_name, credit_card.number, credit_card.verification_value
-# credit_card.year, credit_card.month
 
 sub get_billing_info {
     my $self = shift;
     my $acct_code = shift;
-    return $self->get("/v2/accounts/$acct_code/billing_info");
-}
-
-sub set_billing_info {
-    my ($self, $acct_code, $params) = @_;
-    return $self->put("/v2/accounts/$acct_code/billing_info", $params, 'billing_info');
+    my $billing_info = $self->get("/v2/accounts/$acct_code/billing_info");
+	bless($billing_info, "Net::Recurly::BillingInfo");
+	return $billing_info;
 }
 
 sub clear_billing_info {
@@ -124,9 +128,10 @@ sub clear_billing_info {
 
 sub update_billing_info {
 	my ($self, $acct_code, $params) = @_;
-	return $self->put("/v2/accounts/$acct_code/billing_info", $params, 'billing_info');
+	my $billing_info = $self->put("/v2/accounts/$acct_code/billing_info", $params, 'billing_info');
+	bless($billing_info, "Net::Recurly::BillingInfo");
+	return $billing_info;
 }
-
 
 # Coupons API
 # https://docs.recurly.com/api/coupons
@@ -147,10 +152,17 @@ sub list_coupons {
 	return $self->get("/v2/coupons$extra")
 }
 
+# Subscriptions API
+# http://docs.recurly.com/api/subscriptions
+# required params: plan_code
+# CC and billing info required unless info is on file
+
 sub get_subscription {
     my $self = shift;
     my $sub_uuid = shift;
-    return $self->get("/v2/subscriptions/$sub_uuid");
+    my $subscription = $self->get("/v2/subscriptions/$sub_uuid");
+	bless($subscription, "Net::Recurly::Subscription");
+	return $subscription;
 }
 
 sub delete_subscription {
@@ -159,12 +171,11 @@ sub delete_subscription {
     return $self->delete("/accounts/$acct_code/subscription");
 }
 
-# http://docs.recurly.com/api/subscriptions
-# required params: plan_code
-# CC and billing info required unless info is on file
 sub create_subscription {
     my ($self, $params) = @_;
-    return $self->post("/v2/subscriptions", $params, 'subscription');
+    my $subscription = $self->post("/v2/subscriptions", $params, 'subscription');
+	bless($subscription, "Net::Recurly::Subscription");
+	return $subscription;
 }
 
 sub get_subscription_plan {
@@ -279,7 +290,8 @@ sub req {
     my $resp = $self->ua->request($req);
     my $code = $resp->code;
     if ($code =~ /^[23]\d\d$/) {
-        return XMLin($resp->content);
+        return XMLin($resp->content, NoAttr => 1);
+		#return XMLin($resp->content);
 		#return $resp->content;
     }
     return if $code == 404;
