@@ -1,5 +1,6 @@
 package Net::Recurly::Account;
 use Moose;
+use DateTime;
 
 has 'account_code' => (is => 'rw', isa => 'Str');
 has 'state' => (is => 'ro', isa => 'Str');
@@ -15,6 +16,6 @@ has 'billing_info' => (is => 'rw', isa => 'Net::Recurly::BillingInfo');
 has 'accept_language' => (is => 'rw', isa => 'Str');
 has 'entity_use_code' => (is => 'rw', isa => 'Str');
 has 'hosted_login_token' => (is => 'ro', isa => 'Str');
-has 'created_at' => (is => 'ro', isa => 'Datetime');
+has 'created_at' => (is => 'ro', isa => 'DateTime');
 
 1;

@@ -1,5 +1,6 @@
 package Net::Recurly::Adjustment;
 use Moose;
+use DateTime;
 
 has 'account_code' => (is => 'rw', isa => 'Str', required => 1);
 has 'currency' => (is => 'rw', isa => 'Str', required => 1);
@@ -9,3 +10,5 @@ has 'quantity' => (is => 'rw', isa => 'Int');
 has 'accounting_code' => (is => 'rw', isa => 'Str');
 has 'tax_exempt' => (is => 'rw', isa => 'Bool');
 has 'tax_code' => (is => 'rw', isa => 'Str');
+
+1;

@@ -80,12 +80,6 @@ sub update_account {
 sub list_account_adjustments {
     my $self = shift;
     my $acct_code = shift;
-    return $self->get("/v2/accounts/$acct_code/adjustments");
-}
-
-sub get_adjustment {
-	my $self = shift;
-	my $adjustment_uuid = shift;
     my $extra = '?';
 	my %opts = @_;
 	if (my $t = $opts{type}) {
@@ -100,7 +94,22 @@ sub get_adjustment {
     if (my $p = $opts{per_page}) {
         $extra .= "per_page=$p;";
     }
-	return $self->get("/v2/adjustments/$adjustment_uuid$extra");
+    return $self->get("/v2/accounts/$acct_code/adjustments");
+}
+
+sub get_adjustment {
+	my $self = shift;
+	my $adjustment_uuid = shift;
+	my $adjustment = $self->get("/v2/adjustments/$adjustment_uuid");
+	bless($adjustment, "Net::Recurly::Adjustment");
+	return $adjustment;
+}
+
+sub create_adjustment {
+	my ($self, $acct_code, $params) = @_;
+	my $adjustment = $self->post("/v2/accounts/$acct_code/adjustments", $params, 'adjustment');
+	bless($adjustment, "Net::Recurly::Adjustment");
+	return $adjustment;
 }
 
 sub delete_adjustment {
@@ -149,7 +158,147 @@ sub list_coupons {
     if (my $p = $opts{per_page}) {
         $extra .= "per_page=$p;";
     }
-	return $self->get("/v2/coupons$extra")
+	return $self->get("/v2/coupons$extra");
+}
+
+sub get_coupon {
+	my $self = shift;
+	my $coupon_code = shift;
+	my $coupon = $self->get("/v2/coupons/$coupon_code");
+	bless($coupon,"Net::Recurly::Coupon");
+	return $coupon;
+}
+
+sub create_coupon {
+	my ($self, $params) = @_;
+	my $coupon = $self->post("/v2/coupons", $params, 'coupon');
+	bless($coupon,"Net::Recurly::Coupon");
+	return $coupon;
+}
+
+sub deactivate_coupon {
+	my $self = shift;
+	my $coupon_code = shift;
+	return $self->delete("/v2/coupons/$coupon_code")
+}
+
+# Coupon Redemptions
+
+sub redeem_coupon {
+	my ($self, $coupon_code, $params) = @_;
+	my $redemption = $self->post("/v2/coupons/$coupon_code/redeem");
+	bless($redemption,"Net::Recurly::Redemption");
+	return $redemption;
+}
+
+sub get_coupon_redemption_acct {
+	my ($self, $acct_code, $params) = @_;
+	my $redemption = $self->get("/v2/accounts/$acct_code/redemption");
+	bless($redemption,"Net::Recurly::Redemption");
+	return $redemption;
+}
+
+sub remove_coupon {
+	my ($self, $acct_code, $params) = @_;
+	return $self->delete("/v2/accounts/$acct_code/redemption");
+}
+
+sub get_coupon_redemption_invoice {
+	my ($self, $invoice_number, $params) = @_;
+	my $redemption = $self->get("/v2/invoices/$invoice_number/redemption");
+	bless($redemption,"Net::Recurly::Redemption");
+	return $redemption;
+}
+
+#Invoices API
+# https://docs.recurly.com/api/invoices
+
+sub get_all_invoices {
+	my $self = shift;
+	my %opts = @_;
+	my $extra = '?';
+	if (my $p = $opts{per_page}) {
+		$extra .= "per_page=$p;";
+	}
+	return $self->get("/v2/invoices");
+}
+
+sub get_acct_invoices {
+	my $self = shift;
+	my $acct_code = shift;
+    my $extra = '?';
+	my %opts = @_;
+	if (my $p = $opts{per_page}) {
+		$extra .= "per_page=$p;";
+	}
+	return $self->get("/v2/accounts/$acct_code/invoices");
+}
+
+sub get_invoice {
+	my $self = shift;
+	my $invoice_number = shift;
+	my $invoice = $self->get("/v2/invoices/$invoice_number");
+	bless($invoice,"Net::Recurly::Invoice");
+	return $invoice;
+}
+
+sub get_invoice_pdf {
+	my $self = shift;
+	my $invoice_number = shift;
+	return $self->get_pdf("/v2/invoices/$invoice_number");
+}
+
+sub preview_invoice {
+	my $self = shift;
+	my $acct_code = shift;
+	my $invoice = $self->post("/v2/accounts/$acct_code/invoices/preview");
+	bless($invoice,"Net::Recurly::Invoice");
+	return $invoice;
+}
+
+sub post_invoice {
+	my $self = shift;
+	my $acct_code = shift;
+	my $invoice = $self->post("/v2/accounts/$acct_code/invoices/");
+	bless($invoice,"Net::Recurly::Invoice");
+	return $invoice;
+}
+
+sub mark_invoice_successful {
+	my $self = shift;
+	my $invoice_number = shift;
+	my $invoice = $self->put("/v2/invoices/$invoice_number/mark_successful");
+	bless($invoice,"Net::Recurly::Invoice");
+	return $invoice;
+}
+
+sub mark_invoice_failed {
+	my $self = shift;
+	my $invoice_number = shift;
+	my $invoice = $self->put("/v2/invoices/$invoice_number/mark_failed");
+	bless($invoice,"Net::Recurly::Invoice");
+	return $invoice;
+}
+
+sub refund_line_items {
+	my ($self, $invoice_number, $params) = @_;
+	my $invoice = $self->post("/v2/invoices/$invoice_number/refund", $params, 'invoice');
+	bless($invoice,"Net::Recurly::Invoice");
+	return $invoice;
+}
+
+sub open_amount_refunds {
+	my ($self, $invoice_number, $params) = @_;
+	my $invoice = $self->post("/v2/invoices/$invoice_number/refund", $params, 'invoice');
+	bless($invoice,"Net::Recurly::Invoice");
+	return $invoice;
+}
+
+sub enter_offline_payment {
+	my ($self, $invoice_number, $params) = @_;
+	my $invoice = $self->post("/v2/invoices/$invoice_number/transactions", $params, 'transaction');
+	bless($invoice,"Net::Recurly::Invoice");
+	return $invoice;
 }
 
 # Subscriptions API
@@ -189,6 +338,8 @@ sub get_subscription_plans {
     return $self->get("/v2/plans");
 }
 
+#Transactions API
+
 sub get_transactions {
     my $self = shift;
     my %opts = @_;
@@ -210,44 +361,16 @@ sub get_account_transactions {
     return $self->get("/v2/accounts/$acct_code/transactions$extra");
 }
 
-# https://docs.recurly.com/api/invoices
 
-sub get_all_invoices {
-	my $self = shift;
-	my %opts = @_;
-	my $extra = '?';
-	if (my $p = $opts{per_page}) {
-		$extra .= "per_page=$p;";
-	}
-	return $self->get("/v2/invoices");
-}
-
-sub get_acct_invoices {
-	my $self = shift;
-	my $acct_code = shift;
-    my $extra = '?';
-	my %opts = @_;
-	if (my $p = $opts{per_page}) {
-		$extra .= "per_page=$p;";
-	}
-	return $self->get("/v2/accounts/$acct_code/invoices");
-}
-
-sub get_invoice {
-	my $self = shift;
-	my $invoice_id = shift;
-	return $self->get("/v2/invoices/$invoice_id");
-}
-
-sub get_invoice_pdf {
-	my $self = shift;
-	my $invoice_id = shift;
-	return
-}
 
 sub get {
     my ($self, $path) = @_;
     return $self->req($path, 'GET');
+}
+
+sub get_pdf{
+    my ($self, $path) = @_;
+	return $self->download_req($path, 'GET');
 }
 
 sub post {
@@ -274,8 +397,8 @@ sub req {
     my $url = 'https://' . $self->api_host . $path;
     my $req = HTTP::Request->new($method => $url);
     $req->authorization_basic($self->api_key);
-    $req->header('Accept' => 'application/xml');
-
+	$req->header('Accept' => 'application/xml');
+    
     # serialize body
     my $body_serialized;
     if ($body_args) {
@@ -293,6 +416,27 @@ sub req {
         return XMLin($resp->content, NoAttr => 1);
 		#return XMLin($resp->content);
 		#return $resp->content;
+    }
+    return if $code == 404;
+    die "GET $url failed ($code - " . $resp->content . ")\n";
+}
+
+sub download_req {
+    my ($self, $path, $method) = @_;
+
+    $method ||= 'GET';
+
+    # build request
+    my $url = 'https://' . $self->api_host . $path;
+    my $req = HTTP::Request->new($method => $url);
+    $req->authorization_basic($self->api_key);
+	$req->header('Accept' => 'application/pdf');
+    
+    # do request
+    my $resp = $self->ua->request($req);
+    my $code = $resp->code;
+    if ($code =~ /^[23]\d\d$/) {
+        return $resp->decoded_content;
     }
     return if $code == 404;
     die "GET $url failed ($code - " . $resp->content . ")\n";
