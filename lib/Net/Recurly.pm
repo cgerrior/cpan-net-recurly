@@ -1,3 +1,4 @@
+
 package Net::Recurly;
 use Moose;
 use LWP::UserAgent 6;
@@ -12,7 +13,7 @@ has 'api_host' => (is => 'ro', isa => 'Str', lazy_build => 1);
 
 # Accounts API
 # http://docs.recurly.com/api/accounts
-# required param: account_code
+
 
 sub list_accounts {
     my $self = shift;
@@ -28,9 +29,7 @@ sub list_accounts {
     if (my $p = $opts{per_page}) {
         $extra .= "per_page=$p;";
     }
-    return $self->get("/v2/accounts$extra");
-    #return $self->get("/v2/accounts");
-	
+	return $self->get("/v2/accounts$extra");
 }
 
 sub get_account {
@@ -44,6 +43,13 @@ sub get_account {
 sub create_account {
     my ($self, $params) = @_;
     my $account = $self->post('/v2/accounts', $params, 'account');
+	bless($account, "Net::Recurly::Account");
+	return $account;
+}
+
+sub update_account {
+	my ($self, $acct_code, $params) = @_;
+	my $account = $self->put("/v2/accounts/$acct_code", $params, 'account');
 	bless($account, "Net::Recurly::Account");
 	return $account;
 }
@@ -65,13 +71,6 @@ sub get_account_notes {
     my $self = shift;
     my $acct_code = shift;
     return $self->get("/v2/accounts/$acct_code/notes");
-}
-
-sub update_account {
-	my ($self, $acct_code, $params) = @_;
-	my $account = $self->put("/v2/accounts/$acct_code", $params, 'account');
-	bless($account, "Net::Recurly::Account");
-	return $account;
 }
 
 # Adjustments API
@@ -107,7 +106,7 @@ sub get_adjustment {
 
 sub create_adjustment {
 	my ($self, $acct_code, $params) = @_;
-	my $adjustment = $self->post("/v2/accounts/$acct_code/adjustments", $params, 'adjustment');
+	my $adjustment = $self->post("/v2/accounts/$acct_code/adjustments", $params, "adjustment");
 	bless($adjustment, "Net::Recurly::Adjustment");
 	return $adjustment;
 }
@@ -129,17 +128,17 @@ sub get_billing_info {
 	return $billing_info;
 }
 
-sub clear_billing_info {
-    my $self = shift;
-    my $acct_code = shift;
-    return $self->delete("/v2/accounts/$acct_code/billing_info");
-}
-
 sub update_billing_info {
 	my ($self, $acct_code, $params) = @_;
 	my $billing_info = $self->put("/v2/accounts/$acct_code/billing_info", $params, 'billing_info');
 	bless($billing_info, "Net::Recurly::BillingInfo");
 	return $billing_info;
+}
+
+sub clear_billing_info {
+    my $self = shift;
+    my $acct_code = shift;
+    return $self->delete("/v2/accounts/$acct_code/billing_info");
 }
 
 # Coupons API
@@ -158,14 +157,14 @@ sub list_coupons {
     if (my $p = $opts{per_page}) {
         $extra .= "per_page=$p;";
     }
-	return $self->get("/v2/coupons$extra");
+	return $self->get("/v2/coupons$extra")
 }
 
-sub get_coupon {
+sub lookup_coupon {
 	my $self = shift;
 	my $coupon_code = shift;
-	my $coupon = $self->get("/v2/coupons/$coupon_code");
-	bless($coupon,"Net::Recurly::Coupon");
+	my $coupon = $self->get("/v2/coupons/$coupon_code")
+	bless($coupon, "Net::Recurly::Coupon")
 	return $coupon;
 }
 
@@ -210,7 +209,7 @@ sub get_coupon_redemption_invoice {
 	return $redemption;
 }
 
-#Invoices API
+# Invoices API
 # https://docs.recurly.com/api/invoices
 
 sub get_all_invoices {
@@ -236,16 +235,14 @@ sub get_acct_invoices {
 
 sub get_invoice {
 	my $self = shift;
-	my $invoice_number = shift;
-	my $invoice = $self->get("/v2/invoices/$invoice_number");
-	bless($invoice,"Net::Recurly::Invoice");
-	return $invoice;
+	my $invoice_id = shift;
+	return $self->get("/v2/invoices/$invoice_id");
 }
 
 sub get_invoice_pdf {
 	my $self = shift;
-	my $invoice_number = shift;
-	return $self->get_pdf("/v2/invoices/$invoice_number");
+	my $invoice_id = shift;
+	return $self->get_pdf("/v2/invoices/$invoice_id");
 }
 
 sub preview_invoice {
@@ -301,6 +298,27 @@ sub enter_offline_payment {
 	return $invoice;
 }
 
+# Plans API
+# https://docs.recurly.com/api/plans
+
+sub get_subscription_plans {
+    my $self = shift;
+    return $self->get("/v2/plans");
+}
+
+sub get_subscription_plan {
+    my $self = shift;
+    my $plan_code = shift;
+    return $self->get("/v2/plans/$plan_code");
+}
+
+sub create_plan {
+	
+}
+
+
+
+
 # Subscriptions API
 # http://docs.recurly.com/api/subscriptions
 # required params: plan_code
@@ -327,19 +345,8 @@ sub create_subscription {
 	return $subscription;
 }
 
-sub get_subscription_plan {
-    my $self = shift;
-    my $plan_code = shift;
-    return $self->get("/v2/plans/$plan_code");
-}
 
-sub get_subscription_plans {
-    my $self = shift;
-    return $self->get("/v2/plans");
-}
-
-#Transactions API
-
+# Transactions API
 sub get_transactions {
     my $self = shift;
     my %opts = @_;
@@ -362,15 +369,16 @@ sub get_account_transactions {
 }
 
 
+#HTTP Requests
 
 sub get {
     my ($self, $path) = @_;
     return $self->req($path, 'GET');
 }
 
-sub get_pdf{
+sub get_pdf {
     my ($self, $path) = @_;
-	return $self->download_req($path, 'GET');
+    return $self->req_pdf($path, 'GET');
 }
 
 sub post {
@@ -397,8 +405,8 @@ sub req {
     my $url = 'https://' . $self->api_host . $path;
     my $req = HTTP::Request->new($method => $url);
     $req->authorization_basic($self->api_key);
-	$req->header('Accept' => 'application/xml');
-    
+    $req->header('Accept' => 'application/xml');
+
     # serialize body
     my $body_serialized;
     if ($body_args) {
@@ -412,7 +420,12 @@ sub req {
     # do request
     my $resp = $self->ua->request($req);
     my $code = $resp->code;
+	follow_cursor($resp);
+
     if ($code =~ /^[23]\d\d$/) {
+		while (){
+			
+		}
         return XMLin($resp->content, NoAttr => 1);
 		#return XMLin($resp->content);
 		#return $resp->content;
@@ -421,8 +434,8 @@ sub req {
     die "GET $url failed ($code - " . $resp->content . ")\n";
 }
 
-sub download_req {
-    my ($self, $path, $method) = @_;
+sub req_pdf {
+    my ($self, $path, $method, $body_args, $root_node) = @_;
 
     $method ||= 'GET';
 
@@ -430,13 +443,30 @@ sub download_req {
     my $url = 'https://' . $self->api_host . $path;
     my $req = HTTP::Request->new($method => $url);
     $req->authorization_basic($self->api_key);
-	$req->header('Accept' => 'application/pdf');
-    
+    $req->header('Accept' => 'application/pdf');
+
+    # serialize body
+    my $body_serialized;
+    if ($body_args) {
+        my %xml_opts = ( NoAttr => 1 );
+        $xml_opts{RootName} = $root_node if $root_node;
+        $body_serialized = XMLout($body_args, %xml_opts);
+        $req->content($body_serialized);
+        $req->header('Content-Type', 'application/pdf; charset=utf-8');
+    }
+
     # do request
     my $resp = $self->ua->request($req);
     my $code = $resp->code;
+	follow_cursor($resp);
+
     if ($code =~ /^[23]\d\d$/) {
-        return $resp->decoded_content;
+		while (){
+			
+		}
+        return XMLin($resp->content, NoAttr => 1);
+		#return XMLin($resp->content);
+		#return $resp->content;
     }
     return if $code == 404;
     die "GET $url failed ($code - " . $resp->content . ")\n";
@@ -471,9 +501,8 @@ Net::Recurly - Recurly client library
 
   use Net::Recurly;
 
-  my $R = Net::Recurly->new(
-      username => 'api-test@your-domain.com',
-      password => 'your-password',
+  my $r = Net::Recurly->new(
+      api_key => 'your-api-key',
       subdomain => 'your-domain',
   );
   my $subscription = $r->get_subscription('your-account-code');
@@ -487,30 +516,24 @@ The XML responses are returned as a hash, using XML::Simple.
 
 =head1 CONSTRUCTOR OPTIONS
 
-The constructor takes 3 mandatory arguments:
+The constructor takes 2 mandatory arguments:
 
 =over 4
 
-=item username
+=item api-key
 
-This is the username you use to access the Recurly API.
-
-=item password
-
-This is the password you use to access the Recurly API.
+This is the api-key you use to access the Recurly API.
 
 =item subdomain
 
 This is the domain you have configured for Recurly.
 
-Note: If you are using the Recurly test account, your domain should 
-end in '-test'.
 
 =back
 
 =head1 SEE ALSO
 
-The Recurly API documentation: http://docs.recurly.com/
+The Recurly API documentation: http://docs.recurly.com/api/
 
 =head1 BUGS AND DEFECTS
 
@@ -524,3 +547,5 @@ Copyright 2011 Luke Closs.
 
 This library is free software; you can redistribute it and/or
 modify it under the same terms as Perl itself.
+=======
+>>>>>>> External Changes
